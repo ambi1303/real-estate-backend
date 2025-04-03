@@ -1,81 +1,49 @@
 const express = require("express");
-const router = express.Router();
-const auth = require("../middleware/auth");
-const adminMiddleware = require("../middleware/adminMiddleware");
 const Property = require("../models/Property");
+const auth = require("../middleware/auth");
+const admin = require("../middleware/admin");
+
+const router = express.Router();
 
 // Get all properties
 router.get("/", async (req, res) => {
   try {
     const properties = await Property.find();
     res.json(properties);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
+  } catch (error) {
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Add a new property (Admin only)
-router.post("/add", auth, adminMiddleware, async (req, res) => {
-  const { name, image, location, price } = req.body;
-
-  if (!name || !image || !location || !price) {
-    return res.status(400).json({ msg: "All fields are required" });
-  }
-
+// Add property (Admin only)
+router.post("/add", auth, admin, async (req, res) => {
   try {
-    const newProperty = new Property({
-      name,
-      image,
-      location,
-      price,
-      createdBy: req.user.id, // Admin ID
-    });
-
+    const { name, image, price, location } = req.body;
+    const newProperty = new Property({ name, image, price, location });
     await newProperty.save();
-    res.json({ message: "Property added successfully", property: newProperty });
+    res.json({ msg: "Property added successfully!" });
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Edit a property (Admin only)
-router.put("/edit/:id", auth, adminMiddleware, async (req, res) => {
+// Edit property (Admin only)
+router.put("/edit/:id", auth, admin, async (req, res) => {
   try {
-    const { name, image, location, price } = req.body;
-
-    const updatedProperty = await Property.findByIdAndUpdate(
-      req.params.id,
-      { name, image, location, price },
-      { new: true }
-    );
-
-    if (!updatedProperty) {
-      return res.status(404).json({ message: "Property not found" });
-    }
-
-    res.json({ message: "Property updated successfully", property: updatedProperty });
+    const updatedProperty = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedProperty);
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Delete a property (Admin only)
-router.delete("/delete/:id", auth, adminMiddleware, async (req, res) => {
+// Delete property (Admin only)
+router.delete("/delete/:id", auth, admin, async (req, res) => {
   try {
-    const property = await Property.findById(req.params.id);
-
-    if (!property) {
-      return res.status(404).json({ message: "Property not found" });
-    }
-
-    await property.deleteOne();
-    res.json({ message: "Property deleted successfully" });
+    await Property.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Property deleted successfully!" });
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
