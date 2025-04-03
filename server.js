@@ -9,11 +9,16 @@ const app = express();
 
 // ✅ Middleware
 app.use(express.json()); // ✅ Ensure request body is parsed
-app.use(cors({
-    origin: 'https://real-estate-frontend-three-inky.vercel.app', 
-    methods: 'GET,POST,PUT,DELETE',
-    credentials: true
-}));
+// CORS configuration
+const corsOptions = {
+    origin: 'https://real-estate-frontend-three-inky.vercel.app',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true, // If your frontend needs to send cookies or authentication headers
+    optionsSuccessStatus: 204
+  };
+  
+  app.use(cors(corsOptions));
+  
 // ✅ Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/properties", require("./routes/property"));
