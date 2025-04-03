@@ -9,8 +9,11 @@ const app = express();
 
 // ✅ Middleware
 app.use(express.json()); // ✅ Ensure request body is parsed
-app.use(cors()); // ✅ Fix potential CORS issues
-
+app.use(cors({
+    origin: 'https://real-estate-frontend-three-inky.vercel.app', 
+    methods: 'GET,POST,PUT,DELETE',
+    credentials: true
+}));
 // ✅ Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/properties", require("./routes/property"));
