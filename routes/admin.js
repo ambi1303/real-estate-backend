@@ -1,28 +1,11 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
-
 const router = express.Router();
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
 
-const ADMIN_CREDENTIALS = {
-  email: "admin@example.com",
-  password: "admin123" // Change this in production!
-};
-
-// 🟢 Admin Login (POST)
-router.post("/login", (req, res) => {
-  const { email, password } = req.body;
-
-  if (
-    email === ADMIN_CREDENTIALS.email &&
-    password === ADMIN_CREDENTIALS.password
-  ) {
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-    return res.json({ token });
-  }
-
-  return res.status(401).json({ error: "Invalid credentials" });
+// Example: Protect admin routes
+router.get("/dashboard", authMiddleware, adminMiddleware, (req, res) => {
+  res.json({ message: "Welcome, Admin!" });
 });
 
 module.exports = router;

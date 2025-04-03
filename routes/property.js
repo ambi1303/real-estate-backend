@@ -1,67 +1,50 @@
 const express = require("express");
 const Property = require("../models/Property");
-const authMiddleware = require("../middleware/auth");
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
 
 const router = express.Router();
 
-// 🟢 GET All Properties (Public)
+// Fetch all properties
 router.get("/", async (req, res) => {
   try {
     const properties = await Property.find();
     res.json(properties);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// 🟢 GET Single Property (Public)
-router.get("/:id", async (req, res) => {
-  try {
-    const property = await Property.findById(req.params.id);
-    if (!property) return res.status(404).json({ error: "Property not found" });
-    res.json(property);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// Add a property (Admin only)
+router.post("/add", authMiddleware, adminMiddleware, async (req, res) => {
+  const { name, image, price, location } = req.body;
 
-// 🔒 Admin Only - Add Property (POST)
-router.post("/", authMiddleware, async (req, res) => {
   try {
-    const { name, image, price, location } = req.body;
     const newProperty = new Property({ name, image, price, location });
     await newProperty.save();
-    res.status(201).json(newProperty);
+    res.json({ message: "Property added successfully" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// 🔒 Admin Only - Update Property (PUT)
-router.put("/:id", authMiddleware, async (req, res) => {
+// Edit a property (Admin only)
+router.put("/edit/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const updatedProperty = await Property.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!updatedProperty)
-      return res.status(404).json({ error: "Property not found" });
+    const updatedProperty = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updatedProperty);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// 🔒 Admin Only - Delete Property (DELETE)
-router.delete("/:id", authMiddleware, async (req, res) => {
+// Delete a property (Admin only)
+router.delete("/delete/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const deletedProperty = await Property.findByIdAndDelete(req.params.id);
-    if (!deletedProperty)
-      return res.status(404).json({ error: "Property not found" });
+    await Property.findByIdAndDelete(req.params.id);
     res.json({ message: "Property deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
