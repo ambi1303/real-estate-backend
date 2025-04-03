@@ -1,56 +1,73 @@
 const express = require("express");
+const { verifyToken, isAdmin } = require("../middleware/auth");
 const Property = require("../models/Property");
-const auth = require("../middleware/auth");
-const admin = require("../middleware/admin");
 
 const router = express.Router();
 
-// Get all properties
+// ✅ Get All Properties
 router.get("/", async (req, res) => {
   try {
     const properties = await Property.find();
     res.json(properties);
   } catch (error) {
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-// Add property (Admin only)
-router.post("/add", auth, admin, async (req, res) => {
-    try {
-      if (req.user.role !== "admin") {
-        return res.status(403).json({ message: "Access denied. Admins only." });
-      }
-  
-      const { name, image, price, location } = req.body;
-      const newProperty = new Property({ name, image, price, location });
-  
-      await newProperty.save();
-      res.json({ message: "Property added successfully!" });
-  
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  });
-  
+// ✅ Get Property by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) return res.status(404).json({ error: "Property not found" });
+    res.json(property);
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
-// Edit property (Admin only)
-router.put("/edit/:id", auth, admin, async (req, res) => {
+// ✅ Create Property (Admin Only)
+router.post("/", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { name, image, price, location } = req.body;
+
+    // 🛑 Check if required fields are missing
+    if (!name || !price || !location) {
+      return res.status(400).json({ error: "Name, price, and location are required." });
+    }
+
+    // 🛑 Ensure price is a number
+    if (typeof price !== "number") {
+      return res.status(400).json({ error: "Price must be a number." });
+    }
+
+    const newProperty = new Property({ name, image, price, location });
+    await newProperty.save();
+    
+    res.status(201).json({ message: "Property added successfully", newProperty });
+  } catch (error) {
+    console.error("Error adding property:", error); // 🔍 Logs actual error
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// ✅ Edit Property (Admin Only)
+router.put("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     const updatedProperty = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updatedProperty);
   } catch (error) {
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-// Delete property (Admin only)
-router.delete("/delete/:id", auth, admin, async (req, res) => {
+// ✅ Delete Property (Admin Only)
+router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     await Property.findByIdAndDelete(req.params.id);
-    res.json({ msg: "Property deleted successfully!" });
+    res.json({ message: "Property deleted successfully" });
   } catch (error) {
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
